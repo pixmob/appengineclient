@@ -56,7 +56,7 @@ public class AppEngineClient {
     private static final int HTTP_SC_AUTH_REQUIRED = 401;
     private static final int HTTP_SC_REDIRECT = 302;
     private static final int HTTP_SC_SERVER_ERROR = 500;
-    private static final String TAG = "AppEngineHttpClient";
+    private static final String TAG = "AppEngineClient";
     private final DefaultHttpClient loginClient;
     private final String appEngineHost;
     private final HttpClient delegate;
@@ -71,9 +71,8 @@ public class AppEngineClient {
      * @param accountName Google account name such as johndoe@gmail.com
      * @param delegate {@link HttpClient} instance for making HTTP requests
      */
-    public AppEngineClient(final Context context,
-            final String appEngineHost, final String accountName,
-            final HttpClient delegate) {
+    public AppEngineClient(final Context context, final String appEngineHost,
+            final String accountName, final HttpClient delegate) {
         this.appEngineHost = appEngineHost;
         this.delegate = delegate;
         
