@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AppEngineClient Demo</string>
+    <string name="appengine_instance_name">myapplication</string>
+    <string name="connect">Connect</string>
+    <string name="connecting_to_appengine">Connecting...</string>
+    <string name="error">Sorry</string>
+    <string name="quit">Quit</string>
+    <string name="no_account_error">No Google account found!</string>
+    <string name="status_code_result">Got status code: %1$d</string>
+    <string name="waiting_for_user_permission">Waiting for user permission: try later!</string>
+    <string name="network_error">Network error: %1$d</string>
+    <string name="got_error">Got error: %1$s</string>
+</resources>

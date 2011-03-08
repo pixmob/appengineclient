@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+    <LinearLayout android:layout_height="wrap_content"
+        android:layout_width="fill_parent" android:orientation="horizontal"
+        android:padding="4dip">
+        <EditText android:id="@+id/appspot_base"
+            android:layout_height="wrap_content" android:layout_width="wrap_content"
+            android:layout_marginRight="4dip" android:singleLine="true"
+            android:layout_weight="1" android:hint="@string/appengine_instance_name"
+            android:nextFocusDown="@id/android:list" />
+        <TextView android:text=".appspot.com"
+            android:textStyle="bold" android:layout_height="wrap_content"
+            android:layout_width="wrap_content"></TextView>
+    </LinearLayout>
+    <ListView android:layout_height="wrap_content"
+        android:layout_weight="1" android:layout_width="fill_parent"
+        android:id="@+id/android:list" android:paddingLeft="8dip"
+        android:paddingRight="4dip"></ListView>
+    <LinearLayout android:background="@drawable/android:bottom_bar"
+        android:layout_width="fill_parent" android:layout_height="wrap_content"
+        android:gravity="center">
+        <Button android:layout_height="wrap_content"
+            android:text="@string/connect" android:layout_width="wrap_content"
+            android:id="@+id/connect_button" android:onClick="onConnect"
+            android:enabled="false" android:layout_weight="1" android:padding="4dip"></Button>
+    </LinearLayout>
+</LinearLayout>
+
