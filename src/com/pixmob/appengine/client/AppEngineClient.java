@@ -21,6 +21,7 @@ import static com.pixmob.appengine.client.AppEngineAuthenticationException.AUTHE
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Method;
 import java.net.URLEncoder;
 
 import org.apache.http.HttpResponse;
@@ -38,7 +39,6 @@ import android.accounts.AccountManagerFuture;
 import android.accounts.AuthenticatorException;
 import android.accounts.OperationCanceledException;
 import android.content.Context;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -53,6 +53,19 @@ import android.util.Log;
  * @author Pixmob
  */
 public class AppEngineClient {
+    private static final Method LOG_WTF_METHOD;
+    
+    static {
+        Method logWtf = null;
+        try {
+            logWtf = Log.class.getMethod("wtf", new Class[] { String.class,
+                    String.class, Throwable.class });
+        } catch (NoSuchMethodException e) {
+            logWtf = null;
+        }
+        LOG_WTF_METHOD = logWtf;
+    }
+    
     private static final int HTTP_SC_AUTH_REQUIRED = 401;
     private static final int HTTP_SC_REDIRECT = 302;
     private static final int HTTP_SC_SERVER_ERROR = 500;
@@ -91,14 +104,24 @@ public class AppEngineClient {
             encoded = URLEncoder.encode(str, "UTF-8");
         } catch (UnsupportedEncodingException e) {
             // unlikely to happen
-            final String msg = "UTF-8 encoding is unavailable";
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO) {
-                Log.wtf(TAG, msg, e);
-            } else {
+            logError("UTF-8 encoding is unavailable", e);
+        }
+        return encoded;
+    }
+    
+    private static void logError(String msg, Throwable e) {
+        if (LOG_WTF_METHOD == null) {
+            // API level < 8
+            Log.e(TAG, msg, e);
+        } else {
+            // API level >= 8
+            try {
+                LOG_WTF_METHOD.invoke(null, new Object[] { TAG, msg, e });
+            } catch (Exception e1) {
+                // fallback
                 Log.e(TAG, msg, e);
             }
         }
-        return encoded;
     }
     
     private String getAuthToken() throws AppEngineAuthenticationException {
