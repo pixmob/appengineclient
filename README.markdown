@@ -14,7 +14,7 @@ Making authenticated web requests on AppEngine is easy.
 
     String gaeHost = "myapp.appspot.com";
     String account = "johndoe@gmail.com";
-    AndroidHttpClient httpClient = AndroidHttpClient.newInstance("APP_USER_AGENT", context);
+    DefaultHttpClient httpClient = new DefaultHttpClient();
     AppEngineClient gaeClient = new AppEngineClient(context, gaeHost, account, httpClient);
 
     HttpGet req = new HttpGet("http://myapp.appspot.com/hello");
@@ -32,10 +32,14 @@ Making authenticated web requests on AppEngine is easy.
     	}
     }
 
-The following Android permissions are required by this code:
+The following Android permissions are required in your application when using
+this library:
 
  * android.permission.USE_CREDENTIALS,
  * android.permission.INTERNET.
+
+A demo is available if you want to try this library with a real Android
+application (see "demo" in the source tree).
 
 License
 -------
@@ -47,12 +51,12 @@ How to use this library in my project?
 --------------------------------------
 
 This project is actually a library project.
-See this page for using a library in your Android application:
-  http://developer.android.com/guide/developing/projects/projects-cmdline.html#ReferencingLibraryProject
+See [this page](http://developer.android.com/guide/developing/projects/projects-cmdline.html#ReferencingLibraryProject) for using a library in your Android application:
 
-There is a bug in the SDK r10 with library projects (issue #13024).
-After using the command "android update", you should add these 2 lines
-in the file build.xml, following the tag setup:
+If you want to compile the library, please note that there is a bug in the SDK
+r10 with library projects ([issue 13024](http://code.google.com/p/android/issues/detail?id=13024)).
+After using the command "android update", you should add these 2 lines in the
+file build.xml, following the tag setup:
     <!-- fix compile error with SDK r10: http://code.google.com/p/android/issues/detail?id=13024 -->
     <path id="android.libraries.src"><path refid="project.libraries.src" /></path>
     <path id="android.libraries.jars"><path refid="project.libraries.jars" /></path>
