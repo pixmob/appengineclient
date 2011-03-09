@@ -36,17 +36,15 @@ import android.content.DialogInterface.OnClickListener;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.View.OnFocusChangeListener;
 import android.widget.ArrayAdapter;
 import android.widget.CheckedTextView;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.TextView.OnEditorActionListener;
 
 import com.pixmob.appengine.client.AppEngineAuthenticationException;
 import com.pixmob.appengine.client.AppEngineClient;
@@ -55,25 +53,29 @@ import com.pixmob.appengine.client.AppEngineClient;
  * Activity showing how AppEngine Client could be used.
  * @author Pixmob
  */
-public class DemoActivity extends ListActivity implements
-        OnEditorActionListener, OnFocusChangeListener {
+public class DemoActivity extends ListActivity {
     private static final String TAG = "AppEngineClientDemo";
     private static final String APPSPOT_BASE_PREF = "appspotBase";
     private static final String ACCOUNT_PREF = "account";
     private static final int NO_ACCOUNT_DIALOG = 1;
     private static final int PROGRESS_DIALOG = 2;
+    private static final int MODIFY_APPSPOT_BASE_DIALOG = 3;
+    private static final int AUTH_ERROR_DIALOG = 4;
     private LoginTask loginTask;
     private AccountAdapter accountAdapter;
-    private TextView appspotBaseInput;
+    private TextView appspotBaseView;
     private String appspotBase;
     private String account;
+    private String defaultAppspotBase;
     
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.demo);
         
-        appspotBaseInput = (TextView) findViewById(R.id.appspot_base);
+        defaultAppspotBase = getString(R.string.default_appspot_base);
+        
+        appspotBaseView = (TextView) findViewById(R.id.appspot_base);
         
         loginTask = (LoginTask) getLastNonConfigurationInstance();
         if (loginTask != null) {
@@ -92,7 +94,7 @@ public class DemoActivity extends ListActivity implements
         
         // clear references
         accountAdapter = null;
-        appspotBaseInput = null;
+        appspotBaseView = null;
         
         if (loginTask != null) {
             loginTask.context = null;
@@ -106,11 +108,14 @@ public class DemoActivity extends ListActivity implements
         
         // restore field values
         final SharedPreferences p = getPreferences(MODE_PRIVATE);
-        appspotBase = p.getString(APPSPOT_BASE_PREF, null);
+        appspotBase = p.getString(APPSPOT_BASE_PREF, defaultAppspotBase);
         account = p.getString(ACCOUNT_PREF, null);
         
         reset();
-        checkIfConnectionIsPossible();
+        
+        if (defaultAppspotBase.equals(appspotBase)) {
+            showDialog(MODIFY_APPSPOT_BASE_DIALOG);
+        }
     }
     
     @Override
@@ -128,13 +133,14 @@ public class DemoActivity extends ListActivity implements
     protected Dialog onCreateDialog(int id) {
         if (NO_ACCOUNT_DIALOG == id) {
             final AlertDialog d = new AlertDialog.Builder(this).setTitle(
-                R.string.error).setMessage(R.string.no_account_error)
-                    .setPositiveButton(R.string.quit, new OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            finish();
-                        }
-                    }).create();
+                R.string.error).setCancelable(false).setMessage(
+                R.string.no_account_error).setPositiveButton(R.string.quit,
+                new OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        finish();
+                    }
+                }).create();
             return d;
         }
         if (PROGRESS_DIALOG == id) {
@@ -148,6 +154,31 @@ public class DemoActivity extends ListActivity implements
             });
             return d;
         }
+        if (MODIFY_APPSPOT_BASE_DIALOG == id) {
+            final EditText input = new EditText(this);
+            input.setSelectAllOnFocus(true);
+            input.setText(appspotBase);
+            final AlertDialog d = new AlertDialog.Builder(this).setView(input)
+                    .setTitle(R.string.enter_appspot_instance_name)
+                    .setPositiveButton(R.string.ok, new OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            appspotBase = trimToNull(input.getText().toString());
+                            if (appspotBase == null) {
+                                appspotBase = defaultAppspotBase;
+                            }
+                            appspotBaseView.setText(appspotBase);
+                            storeFields();
+                        }
+                    }).create();
+            return d;
+        }
+        if (AUTH_ERROR_DIALOG == id) {
+            final AlertDialog d = new AlertDialog.Builder(this).setTitle(
+                R.string.auth_error_title).setMessage(
+                R.string.auth_error_message).create();
+            return d;
+        }
         
         return super.onCreateDialog(id);
     }
@@ -157,45 +188,20 @@ public class DemoActivity extends ListActivity implements
         final Account[] accounts = accountManager
                 .getAccountsByType("com.google");
         if (accounts.length == 0) {
-            findViewById(R.id.connect_button).setEnabled(false);
             accountAdapter = new AccountAdapter(this, new Account[0]);
             setListAdapter(accountAdapter);
             showDialog(NO_ACCOUNT_DIALOG);
         } else {
-            findViewById(R.id.connect_button).setEnabled(true);
             Arrays.sort(accounts, AccountComparator.INSTANCE);
             accountAdapter = new AccountAdapter(this, accounts);
             setListAdapter(accountAdapter);
         }
         
-        appspotBaseInput.setText(appspotBase);
-        appspotBaseInput.setOnEditorActionListener(this);
-        appspotBaseInput.setOnFocusChangeListener(this);
+        appspotBaseView.setText(appspotBase);
     }
     
-    private void updateAppspotBase() {
-        appspotBase = trimToNull(appspotBaseInput.getText().toString());
-        appspotBaseInput.setText(appspotBase);
-        checkIfConnectionIsPossible();
-        appspotBaseInput.focusSearch(View.FOCUS_DOWN);
-    }
-    
-    @Override
-    public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-        updateAppspotBase();
-        return false;
-    }
-    
-    @Override
-    public void onFocusChange(View v, boolean hasFocus) {
-        if (!hasFocus) {
-            updateAppspotBase();
-        }
-    }
-    
-    private void checkIfConnectionIsPossible() {
-        final boolean ok = appspotBase != null && account != null;
-        findViewById(R.id.connect_button).setEnabled(ok);
+    public void onModifyAppspotBase(View v) {
+        showDialog(MODIFY_APPSPOT_BASE_DIALOG);
     }
     
     private static String trimToNull(String s) {
@@ -208,14 +214,18 @@ public class DemoActivity extends ListActivity implements
         super.onListItemClick(l, v, position, id);
         account = ((Account) l.getItemAtPosition(position)).name;
         accountAdapter.notifyDataSetInvalidated();
-        checkIfConnectionIsPossible();
     }
     
     public void onConnect(View view) {
+        if (account == null || appspotBase == null) {
+            Toast.makeText(this, R.string.missing_account, Toast.LENGTH_SHORT)
+                    .show();
+            return;
+        }
+        
         storeFields();
         
         final String appspotHost = appspotBase + ".appspot.com";
-        
         loginTask = new LoginTask();
         loginTask.context = this;
         loginTask.execute(appspotHost, account);
@@ -295,8 +305,14 @@ public class DemoActivity extends ListActivity implements
                 final int statusCode = gaeClient.execute(req).getStatusLine()
                         .getStatusCode();
                 Log.i(TAG, "Authentication was successful");
-                msg = String.format(context
-                        .getString(R.string.status_code_result), statusCode);
+                if (statusCode == 200) {
+                    msg = context.getString(R.string.authentication_successful);
+                } else {
+                    msg = String
+                            .format(context
+                                    .getString(R.string.status_code_result),
+                                statusCode);
+                }
             } catch (IOException e) {
                 Log.w(TAG, "Network error", e);
                 msg = String.format(context.getString(R.string.got_error), e
@@ -304,8 +320,7 @@ public class DemoActivity extends ListActivity implements
             } catch (AppEngineAuthenticationException e) {
                 if (e.isAuthenticationPending()) {
                     Log.i(TAG, "Waiting for user permission");
-                    msg = context
-                            .getString(R.string.waiting_for_user_permission);
+                    msg = null;
                 } else {
                     Log.w(TAG, "Authentication error", e);
                     msg = String.format(context.getString(R.string.got_error),
@@ -327,7 +342,9 @@ public class DemoActivity extends ListActivity implements
                     // dialog was not opened
                 }
                 
-                if (message != null) {
+                if (message == null) {
+                    context.showDialog(AUTH_ERROR_DIALOG);
+                } else {
                     Toast.makeText(context, message, Toast.LENGTH_LONG).show();
                 }
             }
