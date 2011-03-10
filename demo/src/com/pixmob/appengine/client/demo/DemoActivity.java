@@ -157,7 +157,8 @@ public class DemoActivity extends ListActivity {
         if (MODIFY_APPSPOT_BASE_DIALOG == id) {
             final EditText input = new EditText(this);
             input.setSelectAllOnFocus(true);
-            input.setText(appspotBase);
+            input.setText(getPreferences(MODE_PRIVATE).getString(
+                APPSPOT_BASE_PREF, defaultAppspotBase));
             final AlertDialog d = new AlertDialog.Builder(this).setView(input)
                     .setTitle(R.string.enter_appspot_instance_name)
                     .setPositiveButton(R.string.ok, new OnClickListener() {
