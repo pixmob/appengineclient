@@ -11,10 +11,10 @@
             android:layout_height="wrap_content" android:textStyle="bold"
             android:gravity="center_vertical" android:id="@+id/appspot_base"
             android:text="@string/default_appspot_base"
-            android:textColor="@color/appspot_base"></TextView>
+            android:textColor="@color/appspot_base" android:singleLine="true"></TextView>
         <TextView android:text=".appspot.com"
             android:layout_height="wrap_content" android:layout_width="wrap_content"
-            android:layout_weight="1"></TextView>
+            android:layout_weight="1" android:singleLine="true"></TextView>
         <Button android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="4dip" android:text="@string/set_appspot_base"
