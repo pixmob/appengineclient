@@ -150,6 +150,8 @@ public class DemoActivity extends ListActivity {
                 @Override
                 public void onCancel(DialogInterface dialog) {
                     loginTask.cancel(true);
+                    // release resources when the task is canceled
+                    loginTask = null;
                 }
             });
             return d;
@@ -278,6 +280,8 @@ public class DemoActivity extends ListActivity {
      */
     private static class LoginTask extends AsyncTask<String, Void, String> {
         DemoActivity context;
+        private DefaultHttpClient httpClient;
+        private AppEngineClient gaeClient;
         
         @Override
         protected void onPreExecute() {
@@ -291,9 +295,9 @@ public class DemoActivity extends ListActivity {
             final String appspotHost = params[0];
             final String account = params[1];
             
-            final DefaultHttpClient httpClient = new DefaultHttpClient();
-            final AppEngineClient gaeClient = new AppEngineClient(context
-                    .getApplicationContext(), appspotHost, account, httpClient);
+            httpClient = new DefaultHttpClient();
+            gaeClient = new AppEngineClient(context.getApplicationContext(),
+                    appspotHost, account, httpClient);
             
             final String url = "http://" + appspotHost;
             final HttpGet req = new HttpGet(url);
@@ -328,14 +332,24 @@ public class DemoActivity extends ListActivity {
                         e.getMessage());
                 }
             } finally {
-                httpClient.getConnectionManager().shutdown();
+                gaeClient.close();
             }
             
             return msg;
         }
         
         @Override
+        protected void onCancelled() {
+            super.onCancelled();
+            Log.i(TAG, "Authentication cancelled");
+            dispose();
+        }
+        
+        @Override
         protected void onPostExecute(String message) {
+            super.onPostExecute(message);
+            dispose();
+            
             if (context != null) {
                 try {
                     context.dismissDialog(PROGRESS_DIALOG);
@@ -348,6 +362,17 @@ public class DemoActivity extends ListActivity {
                 } else {
                     Toast.makeText(context, message, Toast.LENGTH_LONG).show();
                 }
+            }
+        }
+        
+        private void dispose() {
+            if (gaeClient != null) {
+                gaeClient.close();
+                gaeClient = null;
+            }
+            if (httpClient != null) {
+                httpClient.getConnectionManager().shutdown();
+                httpClient = null;
             }
         }
     }

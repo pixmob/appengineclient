@@ -251,4 +251,13 @@ public class AppEngineClient {
         request.setHeader("Cookie", "SACSID=" + authenticationCookie);
         return delegate.execute(request);
     }
+    
+    /**
+     * Release resources associated with this client. The {@link HttpClient}
+     * instance given in the constructor (which handle HTTP requests) <strong>is
+     * not</strong> closed.
+     */
+    public void close() {
+        loginClient.getConnectionManager().shutdown();
+    }
 }
