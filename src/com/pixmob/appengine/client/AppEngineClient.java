@@ -232,6 +232,10 @@ public class AppEngineClient {
      * authentication failed, an {@link AppEngineAuthenticationException} error
      * is raised. If an authentication is pending, the application should retry
      * later.
+     * <p>
+     * The HTTP status code is set to <code>302</code> when the request is
+     * authenticated for the first time (first call to this method).
+     * </p>
      * @param request to execute
      * @return request response
      * @throws IOException if a network request could not be made
