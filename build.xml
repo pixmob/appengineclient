@@ -82,7 +82,7 @@
 
 	<target name="jar" depends="compile">
 	    <jar
-	        destfile="bin/pixmob-appengine-client.jar"
+	        destfile="bin/pixmob-appengineclient.jar"
 	        basedir="bin/classes"
 	    />
 	</target>
