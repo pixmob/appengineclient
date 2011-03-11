@@ -297,7 +297,7 @@ public class DemoActivity extends ListActivity {
             
             httpClient = new DefaultHttpClient();
             gaeClient = new AppEngineClient(context.getApplicationContext(),
-                    appspotHost, account, httpClient);
+                    appspotHost, httpClient, account);
             
             final String url = "http://" + appspotHost;
             final HttpGet req = new HttpGet(url);

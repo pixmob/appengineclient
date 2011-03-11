@@ -67,6 +67,7 @@ public class AppEngineClient {
     }
     
     private static final String HTTP_USER_AGENT = "PixmobAppEngineClient";
+    private static final String GOOGLE_ACCOUNT_TYPE = "com.google";
     private static final int HTTP_SC_AUTH_REQUIRED = 401;
     private static final int HTTP_SC_REDIRECT = 302;
     private static final int HTTP_SC_SERVER_ERROR = 500;
@@ -75,28 +76,40 @@ public class AppEngineClient {
     private final String appEngineHost;
     private final HttpClient delegate;
     private final AccountManager accountManager;
-    private final Account account;
+    private Account account;
     private String authenticationCookie;
     
     /**
-     * Create a new instance.
+     * Create a new instance. No account is set: the method
+     * {@link #setAccount(String)} must be called prior to executing a request.
      * @param context used for getting services and starting intents
      * @param appEngineHost hostname where the AppEngine is hosted
-     * @param accountName Google account name such as johndoe@gmail.com
      * @param delegate {@link HttpClient} instance for making HTTP requests
      */
     public AppEngineClient(final Context context, final String appEngineHost,
-            final String accountName, final HttpClient delegate) {
+            final HttpClient delegate) {
         this.appEngineHost = appEngineHost;
         this.delegate = delegate;
         
         accountManager = AccountManager.get(context);
-        account = new Account(accountName, "com.google");
         
         loginClient = SSLEnabledHttpClient.newInstance(HTTP_USER_AGENT);
         loginClient.setCookieStore(new BasicCookieStore());
         loginClient.getParams().setBooleanParameter(
             ClientPNames.HANDLE_REDIRECTS, false);
+    }
+    
+    /**
+     * Create a new instance.
+     * @param context used for getting services and starting intents
+     * @param appEngineHost hostname where the AppEngine is hosted
+     * @param delegate {@link HttpClient} instance for making HTTP requests
+     * @param accountName Google account name such as johndoe@gmail.com
+     */
+    public AppEngineClient(final Context context, final String appEngineHost,
+            final HttpClient delegate, final String accountName) {
+        this(context, appEngineHost, delegate);
+        setAccount(accountName);
     }
     
     private static String urlEncode(String str) {
@@ -199,6 +212,17 @@ public class AppEngineClient {
         return authCookie;
     }
     
+    public void setAccount(String accountName) {
+        if (accountName == null) {
+            throw new IllegalArgumentException("Account name is required");
+        }
+        if (account != null && !account.name.equals(accountName)) {
+            // reset authentication cookie since account name is different
+            authenticationCookie = null;
+        }
+        account = new Account(accountName, GOOGLE_ACCOUNT_TYPE);
+    }
+    
     /**
      * Execute a request as an authenticated user. On the first request, an
      * authentication token is retrieved from the Android device. The user may
@@ -215,6 +239,11 @@ public class AppEngineClient {
      */
     public HttpResponse execute(HttpUriRequest request) throws IOException,
             AppEngineAuthenticationException {
+        if (account == null) {
+            Log.w(TAG, "No account set: cannot execute authenticated request");
+            throw new AppEngineAuthenticationException(AUTHENTICATION_FAILED);
+        }
+        
         String authToken = getAuthToken();
         if (authenticationCookie == null) {
             authenticationCookie = fetchAuthenticationCookie(authToken);
