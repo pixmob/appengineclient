@@ -66,6 +66,7 @@ public class AppEngineClient {
         LOG_WTF_METHOD = logWtf;
     }
     
+    private static final String HTTP_USER_AGENT = "PixmobAppEngineClient";
     private static final int HTTP_SC_AUTH_REQUIRED = 401;
     private static final int HTTP_SC_REDIRECT = 302;
     private static final int HTTP_SC_SERVER_ERROR = 500;
@@ -92,7 +93,7 @@ public class AppEngineClient {
         accountManager = AccountManager.get(context);
         account = new Account(accountName, "com.google");
         
-        loginClient = new DefaultHttpClient();
+        loginClient = SSLEnabledHttpClient.newInstance(HTTP_USER_AGENT);
         loginClient.setCookieStore(new BasicCookieStore());
         loginClient.getParams().setBooleanParameter(
             ClientPNames.HANDLE_REDIRECTS, false);
