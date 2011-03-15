@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>appengine-client-demo</name>
+	<name>appengineclient-demo</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -32,9 +32,9 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>appengine-client_src</name>
+			<name>appengineclient_src</name>
 			<type>2</type>
-			<locationURI>_android_appengine_client_c83f7935/src</locationURI>
+			<locationURI>_android_appengineclient_8421052e/src</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>
