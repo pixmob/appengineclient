@@ -19,7 +19,10 @@ import static com.pixmob.appengine.client.AppEngineAuthenticationException.AUTHE
 import static com.pixmob.appengine.client.AppEngineAuthenticationException.AUTHENTICATION_PENDING;
 import static com.pixmob.appengine.client.AppEngineAuthenticationException.AUTHENTICATION_UNAVAILABLE;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.net.URLEncoder;
@@ -71,6 +74,7 @@ public class AppEngineClient {
     
     private static final String HTTP_USER_AGENT = "PixmobAppEngineClient";
     private static final String GOOGLE_ACCOUNT_TYPE = "com.google";
+    private static final String AUTH_COOKIE_FILE = "gae-auth_";
     private static final int HTTP_SC_AUTH_REQUIRED = 401;
     private static final int HTTP_SC_REDIRECT = 302;
     private static final int HTTP_SC_SERVER_ERROR = 500;
@@ -79,6 +83,7 @@ public class AppEngineClient {
     private final String appEngineHost;
     private final HttpClient delegate;
     private final AccountManager accountManager;
+    private final Context context;
     private Account account;
     private String authenticationCookie;
     private String httpUserAgent;
@@ -92,6 +97,7 @@ public class AppEngineClient {
      */
     public AppEngineClient(final Context context, final String appEngineHost,
             final HttpClient delegate) {
+        this.context = context.getApplicationContext();
         this.appEngineHost = appEngineHost;
         this.delegate = delegate == null ? new DefaultHttpClient() : delegate;
         
@@ -185,6 +191,45 @@ public class AppEngineClient {
         }
         
         return authToken;
+    }
+    
+    private void readAuthenticationCookie() {
+        authenticationCookie = null;
+        BufferedReader in = null;
+        try {
+            in = new BufferedReader(new InputStreamReader(context
+                    .openFileInput(AUTH_COOKIE_FILE + account.name)), 128);
+            authenticationCookie = in.readLine();
+        } catch (IOException e) {
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (IOException ignore) {
+                }
+            }
+        }
+    }
+    
+    private void writeAuthenticationCookie() {
+        OutputStreamWriter out = null;
+        try {
+            out = new OutputStreamWriter(context.openFileOutput(
+                AUTH_COOKIE_FILE + account.name, Context.MODE_PRIVATE), "UTF-8");
+            
+            if (authenticationCookie != null) {
+                out.write(authenticationCookie);
+            }
+            out.write("\n");
+        } catch (IOException e) {
+            Log.i(TAG, "Failed to store authentication cookie", e);
+        } finally {
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException ignore) {
+                }
+            }
+        }
     }
     
     private String fetchAuthenticationCookie(String authToken,
@@ -288,7 +333,13 @@ public class AppEngineClient {
         
         String authToken = getAuthToken();
         if (authenticationCookie == null) {
-            authenticationCookie = fetchAuthenticationCookie(authToken, false);
+            readAuthenticationCookie();
+            
+            if (authenticationCookie == null) {
+                authenticationCookie = fetchAuthenticationCookie(authToken,
+                    false);
+                writeAuthenticationCookie();
+            }
         }
         
         configureRequest(request);
@@ -296,6 +347,7 @@ public class AppEngineClient {
         int sc = resp.getStatusLine().getStatusCode();
         if (authenticationRequired(sc)) {
             authenticationCookie = fetchAuthenticationCookie(authToken, true);
+            writeAuthenticationCookie();
             resp = executeWithAuth(request);
             sc = resp.getStatusLine().getStatusCode();
             
