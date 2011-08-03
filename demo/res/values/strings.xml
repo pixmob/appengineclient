@@ -16,8 +16,4 @@
     <string name="status_code_result">Got status code: %1$d</string>
     <string name="network_error">Network error: %1$d</string>
     <string name="got_error">Got error: %1$s</string>
-    <string name="auth_error_title">Authorization required</string>
-    <string name="auth_error_message">The application needs your authorization in
-        order to use your account.\nLook at the notification bar to
-        accept this authorization and try again.</string>
 </resources>

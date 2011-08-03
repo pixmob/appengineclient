@@ -24,7 +24,9 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.net.URLEncoder;
 
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -39,6 +41,7 @@ import android.accounts.AccountManagerFuture;
 import android.accounts.AuthenticatorException;
 import android.accounts.OperationCanceledException;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -90,7 +93,7 @@ public class AppEngineClient {
     public AppEngineClient(final Context context, final String appEngineHost,
             final HttpClient delegate) {
         this.appEngineHost = appEngineHost;
-        this.delegate = delegate;
+        this.delegate = delegate == null ? new DefaultHttpClient() : delegate;
         
         accountManager = AccountManager.get(context);
         
@@ -170,14 +173,23 @@ public class AppEngineClient {
             // no authentication token was given: the user should give its
             // permission through an item in the notification bar
             Log.i(TAG, "Authentication permission is required");
-            throw new AppEngineAuthenticationException(AUTHENTICATION_PENDING);
+            
+            final Intent authPermIntent = (Intent) authBundle
+                    .get(AccountManager.KEY_INTENT);
+            int flags = authPermIntent.getFlags();
+            flags &= ~Intent.FLAG_ACTIVITY_NEW_TASK;
+            authPermIntent.setFlags(flags);
+            
+            throw new AppEngineAuthenticationException(AUTHENTICATION_PENDING,
+                    authPermIntent);
         }
         
         return authToken;
     }
     
     private String fetchAuthenticationCookie(String authToken,
-            boolean invalidateAuthToken) throws AppEngineAuthenticationException {
+            boolean invalidateAuthToken)
+            throws AppEngineAuthenticationException {
         if (invalidateAuthToken) {
             Log.i(TAG, "Invalidate authentication token");
             
@@ -195,7 +207,7 @@ public class AppEngineClient {
         configureRequest(req);
         final HttpResponse resp;
         try {
-            resp = loginClient.execute(req);
+            resp = executeAndConsumeContent(loginClient, req);
         } catch (IOException e) {
             throw new AppEngineAuthenticationException(
                     AUTHENTICATION_UNAVAILABLE, e);
@@ -304,7 +316,7 @@ public class AppEngineClient {
     private HttpResponse executeWithAuth(HttpUriRequest request)
             throws IOException {
         request.setHeader("Cookie", "SACSID=" + authenticationCookie);
-        return delegate.execute(request);
+        return executeAndConsumeContent(delegate, request);
     }
     
     /**
@@ -314,5 +326,15 @@ public class AppEngineClient {
      */
     public void close() {
         loginClient.getConnectionManager().shutdown();
+    }
+    
+    private static HttpResponse executeAndConsumeContent(HttpClient client,
+            HttpUriRequest request) throws ClientProtocolException, IOException {
+        final HttpResponse resp = client.execute(request);
+        final HttpEntity entity = resp.getEntity();
+        if (entity != null) {
+            entity.consumeContent();
+        }
+        return resp;
     }
 }

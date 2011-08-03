@@ -18,6 +18,8 @@ package com.pixmob.appengine.client;
 import java.util.HashMap;
 import java.util.Map;
 
+import android.content.Intent;
+
 /**
  * Error when AppEngine authentication failed.
  * @author Pixmob
@@ -44,6 +46,7 @@ public class AppEngineAuthenticationException extends Exception {
     private static final Map<Integer, String> REASON_STRINGS = new HashMap<Integer, String>(
             4);
     private final int reason;
+    private final Intent pendingAuthenticationPermissionActivity;
     
     static {
         REASON_STRINGS.put(UNKNOWN_REASON, "unknown reason");
@@ -54,15 +57,30 @@ public class AppEngineAuthenticationException extends Exception {
     }
     
     public AppEngineAuthenticationException(final int reason) {
+        this(reason, (Intent) null);
+    }
+    
+    public AppEngineAuthenticationException(final int reason,
+            final Intent promptForPermissionIntent) {
         super("AppEngine authentication error (" + REASON_STRINGS.get(reason)
                 + ")");
         this.reason = reason;
+        this.pendingAuthenticationPermissionActivity = promptForPermissionIntent;
     }
     
     public AppEngineAuthenticationException(final int reason,
             final Throwable cause) {
         this(reason);
         initCause(cause);
+    }
+    
+    /**
+     * If the authentication requires user permission, use this intent to start
+     * an activity.
+     * @return user permission activity, <code>null</code> if none
+     */
+    public Intent getPendingAuthenticationPermissionActivity() {
+        return pendingAuthenticationPermissionActivity;
     }
     
     /**

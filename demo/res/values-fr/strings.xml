@@ -15,8 +15,4 @@
     <string name="status_code_result">Code de réponse reçu : %1$d</string>
     <string name="network_error">Erreur réseau : %1$d</string>
     <string name="got_error">Erreur reçue : %1$s</string>
-    <string name="auth_error_title">Autorisation demandée</string>
-    <string name="auth_error_message">L\'application demande votre autorisation pour
-        utiliser votre compte.\nAcceptez l\'autorisation depuis la barre
-        de notifications, puis recommencez.</string>
 </resources>

@@ -30,6 +30,7 @@ import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface.OnClickListener;
@@ -55,12 +56,15 @@ import com.pixmob.appengine.client.AppEngineClient;
  */
 public class DemoActivity extends ListActivity {
     private static final String TAG = "AppEngineClientDemo";
+    private static final int AUTH_REQUEST = 1;
     private static final String APPSPOT_BASE_PREF = "appspotBase";
+    private static final String APPSPOT_BASE_SET_PREF = "appspotBaseSet";
     private static final String ACCOUNT_PREF = "account";
     private static final int NO_ACCOUNT_DIALOG = 1;
     private static final int PROGRESS_DIALOG = 2;
     private static final int MODIFY_APPSPOT_BASE_DIALOG = 3;
-    private static final int AUTH_ERROR_DIALOG = 4;
+    private SharedPreferences prefs;
+    private SharedPreferences.Editor prefsEditor;
     private LoginTask loginTask;
     private AccountAdapter accountAdapter;
     private TextView appspotBaseView;
@@ -72,6 +76,9 @@ public class DemoActivity extends ListActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.demo);
+        
+        prefs = getPreferences(MODE_PRIVATE);
+        prefsEditor = prefs.edit();
         
         defaultAppspotBase = getString(R.string.default_appspot_base);
         
@@ -107,14 +114,24 @@ public class DemoActivity extends ListActivity {
         super.onResume();
         
         // restore field values
-        final SharedPreferences p = getPreferences(MODE_PRIVATE);
-        appspotBase = p.getString(APPSPOT_BASE_PREF, defaultAppspotBase);
-        account = p.getString(ACCOUNT_PREF, null);
+        appspotBase = prefs.getString(APPSPOT_BASE_PREF, defaultAppspotBase);
+        account = prefs.getString(ACCOUNT_PREF, null);
         
         reset();
         
-        if (defaultAppspotBase.equals(appspotBase)) {
+        if (!prefs.getBoolean(APPSPOT_BASE_SET_PREF, false)) {
             showDialog(MODIFY_APPSPOT_BASE_DIALOG);
+        }
+    }
+    
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (AUTH_REQUEST == requestCode) {
+            if (RESULT_OK == resultCode) {
+                // try again since the user gave its permission
+                doConnect();
+            }
         }
     }
     
@@ -125,8 +142,10 @@ public class DemoActivity extends ListActivity {
     }
     
     private void storeFields() {
-        getPreferences(MODE_PRIVATE).edit().putString(APPSPOT_BASE_PREF,
-            appspotBase).putString(ACCOUNT_PREF, account).commit();
+        prefsEditor.putString(APPSPOT_BASE_PREF, appspotBase).putString(
+            ACCOUNT_PREF, account);
+        prefsEditor.putBoolean(APPSPOT_BASE_SET_PREF, true);
+        prefsEditor.commit();
     }
     
     @Override
@@ -159,8 +178,8 @@ public class DemoActivity extends ListActivity {
         if (MODIFY_APPSPOT_BASE_DIALOG == id) {
             final EditText input = new EditText(this);
             input.setSelectAllOnFocus(true);
-            input.setText(getPreferences(MODE_PRIVATE).getString(
-                APPSPOT_BASE_PREF, defaultAppspotBase));
+            input.setText(prefs
+                    .getString(APPSPOT_BASE_PREF, defaultAppspotBase));
             final AlertDialog d = new AlertDialog.Builder(this).setView(input)
                     .setTitle(R.string.enter_appspot_instance_name)
                     .setPositiveButton(R.string.ok, new OnClickListener() {
@@ -174,12 +193,6 @@ public class DemoActivity extends ListActivity {
                             storeFields();
                         }
                     }).create();
-            return d;
-        }
-        if (AUTH_ERROR_DIALOG == id) {
-            final AlertDialog d = new AlertDialog.Builder(this).setTitle(
-                R.string.auth_error_title).setMessage(
-                R.string.auth_error_message).create();
             return d;
         }
         
@@ -227,7 +240,10 @@ public class DemoActivity extends ListActivity {
         }
         
         storeFields();
-        
+        doConnect();
+    }
+    
+    private void doConnect() {
         final String appspotHost = appspotBase + ".appspot.com";
         loginTask = new LoginTask();
         loginTask.context = this;
@@ -326,13 +342,14 @@ public class DemoActivity extends ListActivity {
                 if (e.isAuthenticationPending()) {
                     Log.i(TAG, "Waiting for user permission");
                     msg = null;
+                    context.startActivityForResult(e
+                            .getPendingAuthenticationPermissionActivity(),
+                        AUTH_REQUEST);
                 } else {
                     Log.w(TAG, "Authentication error", e);
                     msg = String.format(context.getString(R.string.got_error),
                         e.getMessage());
                 }
-            } finally {
-                gaeClient.close();
             }
             
             return msg;
@@ -357,9 +374,7 @@ public class DemoActivity extends ListActivity {
                     // dialog was not opened
                 }
                 
-                if (message == null) {
-                    context.showDialog(AUTH_ERROR_DIALOG);
-                } else {
+                if (message != null) {
                     Toast.makeText(context, message, Toast.LENGTH_LONG).show();
                 }
             }
