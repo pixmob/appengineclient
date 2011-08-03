@@ -298,10 +298,10 @@ public class DemoActivity extends ListActivity {
             httpClient = new DefaultHttpClient();
             gaeClient = new AppEngineClient(context.getApplicationContext(),
                     appspotHost, httpClient, account);
+            gaeClient.setHttpUserAgent("AppEngineClientDemo");
             
             final String url = "http://" + appspotHost;
             final HttpGet req = new HttpGet(url);
-            req.setHeader("User-Agent", "AppEngineClientDemo");
             
             Log.i(TAG, "Executing request: " + url);
             

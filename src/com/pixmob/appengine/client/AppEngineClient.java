@@ -78,6 +78,7 @@ public class AppEngineClient {
     private final AccountManager accountManager;
     private Account account;
     private String authenticationCookie;
+    private String httpUserAgent;
     
     /**
      * Create a new instance. No account is set: the method
@@ -138,6 +139,12 @@ public class AppEngineClient {
         }
     }
     
+    private void configureRequest(HttpUriRequest req) {
+        if (httpUserAgent != null) {
+            req.setHeader("User-Agent", httpUserAgent);
+        }
+    }
+    
     private String getAuthToken() throws AppEngineAuthenticationException {
         // get an authentication token from the AccountManager:
         // this call is asynchronous, as the user may not respond immediately
@@ -169,14 +176,23 @@ public class AppEngineClient {
         return authToken;
     }
     
-    private String fetchAuthenticationCookie(String authToken)
-            throws AppEngineAuthenticationException {
+    private String fetchAuthenticationCookie(String authToken,
+            boolean invalidateAuthToken) throws AppEngineAuthenticationException {
+        if (invalidateAuthToken) {
+            Log.i(TAG, "Invalidate authentication token");
+            
+            // invalidate authentication token
+            accountManager.invalidateAuthToken(account.type, authToken);
+            authToken = getAuthToken();
+        }
+        
         final String loginUrl = "https://" + appEngineHost
                 + "/_ah/login?continue=http://localhost/&auth="
                 + urlEncode(authToken);
         Log.d(TAG, "Get authentication cookie from " + loginUrl);
         
         final HttpGet req = new HttpGet(loginUrl);
+        configureRequest(req);
         final HttpResponse resp;
         try {
             resp = loginClient.execute(req);
@@ -206,7 +222,13 @@ public class AppEngineClient {
         }
         
         if (authCookie == null) {
-            throw new AppEngineAuthenticationException(AUTHENTICATION_FAILED);
+            if (!invalidateAuthToken) {
+                // try again with a new authentication token
+                return fetchAuthenticationCookie(authToken, true);
+            } else {
+                throw new AppEngineAuthenticationException(
+                        AUTHENTICATION_FAILED);
+            }
         }
         
         return authCookie;
@@ -221,6 +243,10 @@ public class AppEngineClient {
             authenticationCookie = null;
         }
         account = new Account(accountName, GOOGLE_ACCOUNT_TYPE);
+    }
+    
+    public void setHttpUserAgent(String httpUserAgent) {
+        this.httpUserAgent = httpUserAgent;
     }
     
     /**
@@ -250,19 +276,14 @@ public class AppEngineClient {
         
         String authToken = getAuthToken();
         if (authenticationCookie == null) {
-            authenticationCookie = fetchAuthenticationCookie(authToken);
+            authenticationCookie = fetchAuthenticationCookie(authToken, false);
         }
         
+        configureRequest(request);
         HttpResponse resp = executeWithAuth(request);
         int sc = resp.getStatusLine().getStatusCode();
         if (authenticationRequired(sc)) {
-            Log.d(TAG, "Invalidate authentication token");
-            
-            // invalidate authentication token and retry
-            accountManager.invalidateAuthToken(account.type, authToken);
-            
-            authToken = getAuthToken();
-            authenticationCookie = fetchAuthenticationCookie(authToken);
+            authenticationCookie = fetchAuthenticationCookie(authToken, true);
             resp = executeWithAuth(request);
             sc = resp.getStatusLine().getStatusCode();
             
