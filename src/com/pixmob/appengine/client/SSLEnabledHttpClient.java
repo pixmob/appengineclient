@@ -8,7 +8,7 @@ import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.impl.conn.SingleClientConnManager;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
@@ -23,8 +23,7 @@ import org.apache.http.params.HttpProtocolParams;
  * @author Pixmob
  */
 class SSLEnabledHttpClient extends DefaultHttpClient {
-    private SSLEnabledHttpClient(ClientConnectionManager manager,
-            HttpParams params) {
+    private SSLEnabledHttpClient(ClientConnectionManager manager, HttpParams params) {
         super(manager, params);
     }
     
@@ -49,18 +48,14 @@ class SSLEnabledHttpClient extends DefaultHttpClient {
         // Set the specified user agent and register standard protocols.
         HttpProtocolParams.setUserAgent(params, userAgent);
         
-        final SSLSocketFactory sslSocketFactory = SSLSocketFactory
-                .getSocketFactory();
-        sslSocketFactory
-                .setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+        final SSLSocketFactory sslSocketFactory = SSLSocketFactory.getSocketFactory();
+        sslSocketFactory.setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
         
         final SchemeRegistry schemeRegistry = new SchemeRegistry();
-        schemeRegistry.register(new Scheme("http", PlainSocketFactory
-                .getSocketFactory(), 80));
+        schemeRegistry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
         schemeRegistry.register(new Scheme("https", sslSocketFactory, 443));
         
-        final ClientConnectionManager manager = new ThreadSafeClientConnManager(
-                params, schemeRegistry);
+        final ClientConnectionManager manager = new SingleClientConnManager(params, schemeRegistry);
         return new SSLEnabledHttpClient(manager, params);
     }
 }

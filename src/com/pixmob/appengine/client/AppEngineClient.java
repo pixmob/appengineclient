@@ -64,8 +64,8 @@ public class AppEngineClient {
     static {
         Method logWtf = null;
         try {
-            logWtf = Log.class.getMethod("wtf", new Class[] { String.class,
-                    String.class, Throwable.class });
+            logWtf = Log.class.getMethod("wtf", new Class[] { String.class, String.class,
+                    Throwable.class });
         } catch (NoSuchMethodException e) {
             logWtf = null;
         }
@@ -105,8 +105,7 @@ public class AppEngineClient {
         
         loginClient = SSLEnabledHttpClient.newInstance(HTTP_USER_AGENT);
         loginClient.setCookieStore(new BasicCookieStore());
-        loginClient.getParams().setBooleanParameter(
-            ClientPNames.HANDLE_REDIRECTS, false);
+        loginClient.getParams().setBooleanParameter(ClientPNames.HANDLE_REDIRECTS, false);
     }
     
     /**
@@ -157,37 +156,31 @@ public class AppEngineClient {
     private String getAuthToken() throws AppEngineAuthenticationException {
         // get an authentication token from the AccountManager:
         // this call is asynchronous, as the user may not respond immediately
-        final AccountManagerFuture<Bundle> futureBundle = accountManager
-                .getAuthToken(account, "ah", true, null, null);
+        final AccountManagerFuture<Bundle> futureBundle = accountManager.getAuthToken(account,
+            "ah", true, null, null);
         final Bundle authBundle;
         try {
             authBundle = futureBundle.getResult();
         } catch (OperationCanceledException e) {
-            throw new AppEngineAuthenticationException(
-                    AUTHENTICATION_UNAVAILABLE, e);
+            throw new AppEngineAuthenticationException(AUTHENTICATION_UNAVAILABLE, e);
         } catch (AuthenticatorException e) {
-            throw new AppEngineAuthenticationException(
-                    AUTHENTICATION_UNAVAILABLE, e);
+            throw new AppEngineAuthenticationException(AUTHENTICATION_UNAVAILABLE, e);
         } catch (IOException e) {
-            throw new AppEngineAuthenticationException(
-                    AUTHENTICATION_UNAVAILABLE, e);
+            throw new AppEngineAuthenticationException(AUTHENTICATION_UNAVAILABLE, e);
         }
         
-        final String authToken = authBundle
-                .getString(AccountManager.KEY_AUTHTOKEN);
+        final String authToken = authBundle.getString(AccountManager.KEY_AUTHTOKEN);
         if (authToken == null) {
             // no authentication token was given: the user should give its
             // permission through an item in the notification bar
             Log.i(TAG, "Authentication permission is required");
             
-            final Intent authPermIntent = (Intent) authBundle
-                    .get(AccountManager.KEY_INTENT);
+            final Intent authPermIntent = (Intent) authBundle.get(AccountManager.KEY_INTENT);
             int flags = authPermIntent.getFlags();
             flags &= ~Intent.FLAG_ACTIVITY_NEW_TASK;
             authPermIntent.setFlags(flags);
             
-            throw new AppEngineAuthenticationException(AUTHENTICATION_PENDING,
-                    authPermIntent);
+            throw new AppEngineAuthenticationException(AUTHENTICATION_PENDING, authPermIntent);
         }
         
         return authToken;
@@ -197,10 +190,11 @@ public class AppEngineClient {
         authenticationCookie = null;
         BufferedReader in = null;
         try {
-            in = new BufferedReader(new InputStreamReader(context
-                    .openFileInput(AUTH_COOKIE_FILE + account.name)), 128);
+            in = new BufferedReader(new InputStreamReader(context.openFileInput(AUTH_COOKIE_FILE
+                    + account.name)), 128);
             authenticationCookie = in.readLine();
-        } catch (IOException e) {
+        } catch (IOException ignore) {
+        } finally {
             if (in != null) {
                 try {
                     in.close();
@@ -213,8 +207,8 @@ public class AppEngineClient {
     private void writeAuthenticationCookie() {
         OutputStreamWriter out = null;
         try {
-            out = new OutputStreamWriter(context.openFileOutput(
-                AUTH_COOKIE_FILE + account.name, Context.MODE_PRIVATE), "UTF-8");
+            out = new OutputStreamWriter(context.openFileOutput(AUTH_COOKIE_FILE + account.name,
+                Context.MODE_PRIVATE), "UTF-8");
             
             if (authenticationCookie != null) {
                 out.write(authenticationCookie);
@@ -232,8 +226,7 @@ public class AppEngineClient {
         }
     }
     
-    private String fetchAuthenticationCookie(String authToken,
-            boolean invalidateAuthToken)
+    private String fetchAuthenticationCookie(String authToken, boolean invalidateAuthToken)
             throws AppEngineAuthenticationException {
         if (invalidateAuthToken) {
             Log.i(TAG, "Invalidate authentication token");
@@ -244,18 +237,16 @@ public class AppEngineClient {
         }
         
         final String loginUrl = "https://" + appEngineHost
-                + "/_ah/login?continue=http://localhost/&auth="
-                + urlEncode(authToken);
+                + "/_ah/login?continue=http://localhost/&auth=" + urlEncode(authToken);
         Log.d(TAG, "Get authentication cookie from " + loginUrl);
         
         final HttpGet req = new HttpGet(loginUrl);
         configureRequest(req);
         final HttpResponse resp;
         try {
-            resp = executeAndConsumeContent(loginClient, req);
+            resp = executeAndClose(loginClient, req);
         } catch (IOException e) {
-            throw new AppEngineAuthenticationException(
-                    AUTHENTICATION_UNAVAILABLE, e);
+            throw new AppEngineAuthenticationException(AUTHENTICATION_UNAVAILABLE, e);
         }
         
         final int sc = resp.getStatusLine().getStatusCode();
@@ -263,8 +254,7 @@ public class AppEngineClient {
         String authCookie = null;
         if (sc == HTTP_SC_REDIRECT) {
             // authentication was successful
-            for (final Cookie cookie : loginClient.getCookieStore()
-                    .getCookies()) {
+            for (final Cookie cookie : loginClient.getCookieStore().getCookies()) {
                 if (cookie.getName().contains("ACSID")) {
                     authCookie = cookie.getValue();
                     break;
@@ -283,8 +273,7 @@ public class AppEngineClient {
                 // try again with a new authentication token
                 return fetchAuthenticationCookie(authToken, true);
             } else {
-                throw new AppEngineAuthenticationException(
-                        AUTHENTICATION_FAILED);
+                throw new AppEngineAuthenticationException(AUTHENTICATION_FAILED);
             }
         }
         
@@ -336,8 +325,7 @@ public class AppEngineClient {
             readAuthenticationCookie();
             
             if (authenticationCookie == null) {
-                authenticationCookie = fetchAuthenticationCookie(authToken,
-                    false);
+                authenticationCookie = fetchAuthenticationCookie(authToken, false);
                 writeAuthenticationCookie();
             }
         }
@@ -352,8 +340,7 @@ public class AppEngineClient {
             sc = resp.getStatusLine().getStatusCode();
             
             if (authenticationRequired(sc)) {
-                throw new AppEngineAuthenticationException(
-                        AUTHENTICATION_FAILED);
+                throw new AppEngineAuthenticationException(AUTHENTICATION_FAILED);
             }
         }
         
@@ -361,14 +348,12 @@ public class AppEngineClient {
     }
     
     private static boolean authenticationRequired(int statusCode) {
-        return statusCode == HTTP_SC_AUTH_REQUIRED
-                || statusCode == HTTP_SC_SERVER_ERROR;
+        return statusCode == HTTP_SC_AUTH_REQUIRED || statusCode == HTTP_SC_SERVER_ERROR;
     }
     
-    private HttpResponse executeWithAuth(HttpUriRequest request)
-            throws IOException {
+    private HttpResponse executeWithAuth(HttpUriRequest request) throws IOException {
         request.setHeader("Cookie", "SACSID=" + authenticationCookie);
-        return executeAndConsumeContent(delegate, request);
+        return executeAndClose(delegate, request);
     }
     
     /**
@@ -377,15 +362,23 @@ public class AppEngineClient {
      * not</strong> closed.
      */
     public void close() {
+        delegate.getConnectionManager().shutdown();
         loginClient.getConnectionManager().shutdown();
     }
     
-    private static HttpResponse executeAndConsumeContent(HttpClient client,
-            HttpUriRequest request) throws ClientProtocolException, IOException {
+    private static HttpResponse executeAndClose(HttpClient client, HttpUriRequest request)
+            throws ClientProtocolException, IOException {
         final HttpResponse resp = client.execute(request);
         final HttpEntity entity = resp.getEntity();
         if (entity != null) {
-            entity.consumeContent();
+            try {
+                // Closing the input stream will trigger connection release.
+                entity.getContent().close();
+            } catch (IllegalStateException e) {
+                // The input stream cannot be created twice.
+            } catch (IOException e) {
+                // There was an I/O error when opening the stream.
+            }
         }
         return resp;
     }
