@@ -82,11 +82,22 @@ public class AppEngineClient {
     private final DefaultHttpClient loginClient;
     private final String appEngineHost;
     private final HttpClient delegate;
+    private final boolean delegateWasSet;
     private final AccountManager accountManager;
     private final Context context;
     private Account account;
     private String authenticationCookie;
     private String httpUserAgent;
+    
+    /**
+     * Create a new instance, using an internal {@link HttpClient} instance.
+     * This instance is managed by this class: allocated resources are released
+     * with {@link #close()}.
+     * @see #AppEngineClient(Context, String, HttpClient)
+     */
+    public AppEngineClient(final Context context, final String appEngineHost) {
+        this(context, appEngineHost, null);
+    }
     
     /**
      * Create a new instance. No account is set: the method
@@ -99,7 +110,10 @@ public class AppEngineClient {
             final HttpClient delegate) {
         this.context = context.getApplicationContext();
         this.appEngineHost = appEngineHost;
-        this.delegate = delegate == null ? new DefaultHttpClient() : delegate;
+        
+        delegateWasSet = delegate != null;
+        this.delegate = delegateWasSet ? delegate : SSLEnabledHttpClient
+                .newInstance(HTTP_USER_AGENT);
         
         accountManager = AccountManager.get(context);
         
@@ -362,7 +376,11 @@ public class AppEngineClient {
      * not</strong> closed.
      */
     public void close() {
-        delegate.getConnectionManager().shutdown();
+        if (!delegateWasSet) {
+            // The delegate HTTP client was created by this class:
+            // the allocated resources are released
+            delegate.getConnectionManager().shutdown();
+        }
         loginClient.getConnectionManager().shutdown();
     }
     
@@ -372,12 +390,9 @@ public class AppEngineClient {
         final HttpEntity entity = resp.getEntity();
         if (entity != null) {
             try {
-                // Closing the input stream will trigger connection release.
-                entity.getContent().close();
-            } catch (IllegalStateException e) {
-                // The input stream cannot be created twice.
-            } catch (IOException e) {
-                // There was an I/O error when opening the stream.
+                // The response must be read in order to release the connection.
+                entity.consumeContent();
+            } catch (IOException ignore) {
             }
         }
         return resp;
