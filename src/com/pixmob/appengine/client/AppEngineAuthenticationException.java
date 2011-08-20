@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Alexandre Roman
+ * Copyright (C) 2011 Pixmob (http://github.com/pixmob)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,7 @@ public class AppEngineAuthenticationException extends Exception {
      */
     public static final int AUTHENTICATION_UNAVAILABLE = 3;
     private static final long serialVersionUID = 1L;
-    private static final Map<Integer, String> REASON_STRINGS = new HashMap<Integer, String>(
-            4);
+    private static final Map<Integer, String> REASON_STRINGS = new HashMap<Integer, String>(4);
     private final int reason;
     private final Intent pendingAuthenticationPermissionActivity;
     
@@ -52,24 +51,20 @@ public class AppEngineAuthenticationException extends Exception {
         REASON_STRINGS.put(UNKNOWN_REASON, "unknown reason");
         REASON_STRINGS.put(AUTHENTICATION_PENDING, "authentication pending");
         REASON_STRINGS.put(AUTHENTICATION_FAILED, "authentication failed");
-        REASON_STRINGS.put(AUTHENTICATION_UNAVAILABLE,
-            "authentication unavailable");
+        REASON_STRINGS.put(AUTHENTICATION_UNAVAILABLE, "authentication unavailable");
     }
     
     public AppEngineAuthenticationException(final int reason) {
         this(reason, (Intent) null);
     }
     
-    public AppEngineAuthenticationException(final int reason,
-            final Intent promptForPermissionIntent) {
-        super("AppEngine authentication error (" + REASON_STRINGS.get(reason)
-                + ")");
+    public AppEngineAuthenticationException(final int reason, final Intent promptForPermissionIntent) {
+        super("AppEngine authentication error (" + REASON_STRINGS.get(reason) + ")");
         this.reason = reason;
         this.pendingAuthenticationPermissionActivity = promptForPermissionIntent;
     }
     
-    public AppEngineAuthenticationException(final int reason,
-            final Throwable cause) {
+    public AppEngineAuthenticationException(final int reason, final Throwable cause) {
         this(reason);
         initCause(cause);
     }
