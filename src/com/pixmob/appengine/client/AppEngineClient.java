@@ -27,9 +27,7 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.net.URLEncoder;
 
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.client.methods.HttpGet;
@@ -39,6 +37,7 @@ import org.apache.http.cookie.Cookie;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
+import org.apache.http.protocol.HTTP;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -167,7 +166,7 @@ public class AppEngineClient {
     
     private void configureRequest(HttpUriRequest req) {
         if (httpUserAgent != null) {
-            req.setHeader("User-Agent", httpUserAgent);
+            req.setHeader(HTTP.USER_AGENT, httpUserAgent);
         }
     }
     
@@ -262,7 +261,7 @@ public class AppEngineClient {
         configureRequest(req);
         final HttpResponse resp;
         try {
-            resp = executeAndClose(loginClient, req);
+            resp = loginClient.execute(req);
         } catch (IOException e) {
             throw new AppEngineAuthenticationException(AUTHENTICATION_UNAVAILABLE, e);
         }
@@ -389,7 +388,7 @@ public class AppEngineClient {
     
     private HttpResponse executeWithAuth(HttpUriRequest request) throws IOException {
         request.setHeader("Cookie", "SACSID=" + authenticationCookie);
-        return executeAndClose(delegate, request);
+        return delegate.execute(request);
     }
     
     /**
@@ -404,19 +403,5 @@ public class AppEngineClient {
             delegate.getConnectionManager().shutdown();
         }
         loginClient.getConnectionManager().shutdown();
-    }
-    
-    private static HttpResponse executeAndClose(HttpClient client, HttpUriRequest request)
-            throws ClientProtocolException, IOException {
-        final HttpResponse resp = client.execute(request);
-        final HttpEntity entity = resp.getEntity();
-        if (entity != null) {
-            try {
-                // The response must be read in order to release the connection.
-                entity.consumeContent();
-            } catch (IOException ignore) {
-            }
-        }
-        return resp;
     }
 }
