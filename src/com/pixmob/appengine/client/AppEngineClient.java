@@ -31,12 +31,14 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.params.ClientPNames;
 import org.apache.http.cookie.Cookie;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -120,6 +122,8 @@ public class AppEngineClient {
         loginClient = SSLEnabledHttpClient.newInstance(HTTP_USER_AGENT);
         loginClient.setCookieStore(new BasicCookieStore());
         loginClient.getParams().setBooleanParameter(ClientPNames.HANDLE_REDIRECTS, false);
+        
+        setRetryCount(3);
     }
     
     /**
@@ -292,6 +296,24 @@ public class AppEngineClient {
         }
         
         return authCookie;
+    }
+    
+    /**
+     * Set how many times a connection is retried in case of a network error.
+     * @param retryCount positive integer
+     */
+    public void setRetryCount(int retryCount) {
+        if (retryCount < 0) {
+            throw new IllegalArgumentException("Invalid retry count: " + retryCount);
+        }
+        
+        final HttpRequestRetryHandler retryHandler = new DefaultHttpRequestRetryHandler(retryCount,
+                true);
+        loginClient.setHttpRequestRetryHandler(retryHandler);
+        if (delegateWasSet) {
+            final DefaultHttpClient client = (DefaultHttpClient) delegate;
+            client.setHttpRequestRetryHandler(retryHandler);
+        }
     }
     
     public void setAccount(String accountName) {
