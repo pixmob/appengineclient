@@ -71,6 +71,10 @@ class SSLEnabledHttpClient extends DefaultHttpClient {
         schemeRegistry.register(new Scheme("https", sslSocketFactory, 443));
         
         final ClientConnectionManager manager = new SingleClientConnManager(params, schemeRegistry);
-        return new SSLEnabledHttpClient(manager, params);
+        final SSLEnabledHttpClient client = new SSLEnabledHttpClient(manager, params);
+        client.addRequestInterceptor(new GzipRequestInterceptor());
+        client.addResponseInterceptor(new GzipResponseInterceptor());
+        
+        return client;
     }
 }
