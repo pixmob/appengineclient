@@ -63,6 +63,10 @@ class SSLEnabledHttpClient extends DefaultHttpClient {
         // Set the specified user agent and register standard protocols.
         HttpProtocolParams.setUserAgent(params, userAgent);
         
+        // Prevent UnknownHostException error with 3G connections:
+        // http://stackoverflow.com/questions/2052299/httpclient-on-android-nohttpresponseexception-through-umts-3g
+        HttpProtocolParams.setUseExpectContinue(params, false);
+        
         final SSLSocketFactory sslSocketFactory = SSLSocketFactory.getSocketFactory();
         sslSocketFactory.setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
         
