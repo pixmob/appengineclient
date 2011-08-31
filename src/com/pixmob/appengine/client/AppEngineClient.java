@@ -27,10 +27,12 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.net.URLEncoder;
 
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.params.ClientPNames;
 import org.apache.http.cookie.Cookie;
@@ -78,7 +80,6 @@ public class AppEngineClient {
     private static final String AUTH_COOKIE_FILE = "gae-auth_";
     private static final int HTTP_SC_AUTH_REQUIRED = 401;
     private static final int HTTP_SC_REDIRECT = 302;
-    private static final int HTTP_SC_SERVER_ERROR = 500;
     private static final String TAG = "AppEngineClient";
     private final DefaultHttpClient loginClient;
     private final String appEngineHost;
@@ -261,7 +262,7 @@ public class AppEngineClient {
         configureRequest(req);
         final HttpResponse resp;
         try {
-            resp = loginClient.execute(req);
+            resp = safelyExecute(loginClient, req);
         } catch (IOException e) {
             throw new AppEngineAuthenticationException(AUTHENTICATION_UNAVAILABLE, e);
         }
@@ -369,12 +370,21 @@ public class AppEngineClient {
         HttpResponse resp = executeWithAuth(request);
         int sc = resp.getStatusLine().getStatusCode();
         if (authenticationRequired(sc)) {
+            closeResources(request, resp);
             authenticationCookie = fetchAuthenticationCookie(authToken, true);
             writeAuthenticationCookie();
+            
+            if (request instanceof HttpRequestBase) {
+                try {
+                    request = (HttpUriRequest) ((HttpRequestBase) request).clone();
+                } catch (CloneNotSupportedException ignore) {
+                }
+            }
             resp = executeWithAuth(request);
             sc = resp.getStatusLine().getStatusCode();
             
             if (authenticationRequired(sc)) {
+                closeResources(request, resp);
                 throw new AppEngineAuthenticationException(AUTHENTICATION_FAILED);
             }
         }
@@ -383,12 +393,42 @@ public class AppEngineClient {
     }
     
     private static boolean authenticationRequired(int statusCode) {
-        return statusCode == HTTP_SC_AUTH_REQUIRED || statusCode == HTTP_SC_SERVER_ERROR;
+        return statusCode == HTTP_SC_AUTH_REQUIRED;
     }
     
     private HttpResponse executeWithAuth(HttpUriRequest request) throws IOException {
         request.setHeader("Cookie", "SACSID=" + authenticationCookie);
-        return delegate.execute(request);
+        return safelyExecute(delegate, request);
+    }
+    
+    /**
+     * Execute a request. If there is an error, the connection is closed.
+     */
+    private static HttpResponse safelyExecute(HttpClient client, HttpUriRequest request)
+            throws IOException {
+        HttpResponse resp = null;
+        try {
+            resp = client.execute(request);
+        } catch (IOException e) {
+            closeResources(request, resp);
+            throw e;
+        }
+        
+        return resp;
+    }
+    
+    private static void closeResources(HttpUriRequest req, HttpResponse resp) {
+        try {
+            req.abort();
+        } catch (UnsupportedOperationException ignore) {
+        }
+        final HttpEntity entity = resp != null ? resp.getEntity() : null;
+        if (entity != null) {
+            try {
+                entity.consumeContent();
+            } catch (IOException ignore) {
+            }
+        }
     }
     
     /**
