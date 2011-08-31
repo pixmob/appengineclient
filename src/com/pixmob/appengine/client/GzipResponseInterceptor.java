@@ -41,13 +41,15 @@ class GzipResponseInterceptor implements HttpResponseInterceptor {
     public void process(HttpResponse response, HttpContext context) throws HttpException,
             IOException {
         final HttpEntity entity = response.getEntity();
-        final Header ceheader = entity.getContentEncoding();
-        if (ceheader != null) {
-            final HeaderElement[] codecs = ceheader.getElements();
-            for (HeaderElement codec : codecs) {
-                if (codec.getName().equalsIgnoreCase("gzip")) {
-                    response.setEntity(new GzipDecompressingEntity(response.getEntity()));
-                    return;
+        if (entity != null) {
+            final Header ceheader = entity.getContentEncoding();
+            if (ceheader != null) {
+                final HeaderElement[] codecs = ceheader.getElements();
+                for (HeaderElement codec : codecs) {
+                    if (codec.getName().equalsIgnoreCase("gzip")) {
+                        response.setEntity(new GzipDecompressingEntity(response.getEntity()));
+                        return;
+                    }
                 }
             }
         }
