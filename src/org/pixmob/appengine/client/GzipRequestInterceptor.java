@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.pixmob.appengine.client;
+package org.pixmob.appengine.client;
 
 import java.io.IOException;
 

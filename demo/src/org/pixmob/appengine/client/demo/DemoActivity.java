@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Alexandre Roman
+ * Copyright (C) 2011 Pixmob (http://github.com/pixmob)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.pixmob.appengine.client.demo;
+package org.pixmob.appengine.client.demo;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -21,6 +21,9 @@ import java.util.Comparator;
 
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.pixmob.appengine.client.AppEngineAuthenticationException;
+import org.pixmob.appengine.client.AppEngineClient;
+import org.pixmob.appengine.client.R;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -46,9 +49,6 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import com.pixmob.appengine.client.AppEngineAuthenticationException;
-import com.pixmob.appengine.client.AppEngineClient;
 
 /**
  * Activity showing how AppEngine Client could be used.
@@ -142,8 +142,7 @@ public class DemoActivity extends ListActivity {
     }
     
     private void storeFields() {
-        prefsEditor.putString(APPSPOT_BASE_PREF, appspotBase).putString(
-            ACCOUNT_PREF, account);
+        prefsEditor.putString(APPSPOT_BASE_PREF, appspotBase).putString(ACCOUNT_PREF, account);
         prefsEditor.putBoolean(APPSPOT_BASE_SET_PREF, true);
         prefsEditor.commit();
     }
@@ -151,15 +150,14 @@ public class DemoActivity extends ListActivity {
     @Override
     protected Dialog onCreateDialog(int id) {
         if (NO_ACCOUNT_DIALOG == id) {
-            final AlertDialog d = new AlertDialog.Builder(this).setTitle(
-                R.string.error).setCancelable(false).setMessage(
-                R.string.no_account_error).setPositiveButton(R.string.quit,
-                new OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        finish();
-                    }
-                }).create();
+            final AlertDialog d = new AlertDialog.Builder(this).setTitle(R.string.error)
+                    .setCancelable(false).setMessage(R.string.no_account_error).setPositiveButton(
+                        R.string.quit, new OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                finish();
+                            }
+                        }).create();
             return d;
         }
         if (PROGRESS_DIALOG == id) {
@@ -178,21 +176,20 @@ public class DemoActivity extends ListActivity {
         if (MODIFY_APPSPOT_BASE_DIALOG == id) {
             final EditText input = new EditText(this);
             input.setSelectAllOnFocus(true);
-            input.setText(prefs
-                    .getString(APPSPOT_BASE_PREF, defaultAppspotBase));
-            final AlertDialog d = new AlertDialog.Builder(this).setView(input)
-                    .setTitle(R.string.enter_appspot_instance_name)
-                    .setPositiveButton(R.string.ok, new OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            appspotBase = trimToNull(input.getText().toString());
-                            if (appspotBase == null) {
-                                appspotBase = defaultAppspotBase;
-                            }
-                            appspotBaseView.setText(appspotBase);
-                            storeFields();
+            input.setText(prefs.getString(APPSPOT_BASE_PREF, defaultAppspotBase));
+            final AlertDialog d = new AlertDialog.Builder(this).setView(input).setTitle(
+                R.string.enter_appspot_instance_name).setPositiveButton(R.string.ok,
+                new OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        appspotBase = trimToNull(input.getText().toString());
+                        if (appspotBase == null) {
+                            appspotBase = defaultAppspotBase;
                         }
-                    }).create();
+                        appspotBaseView.setText(appspotBase);
+                        storeFields();
+                    }
+                }).create();
             return d;
         }
         
@@ -201,8 +198,7 @@ public class DemoActivity extends ListActivity {
     
     private void reset() {
         final AccountManager accountManager = AccountManager.get(this);
-        final Account[] accounts = accountManager
-                .getAccountsByType("com.google");
+        final Account[] accounts = accountManager.getAccountsByType("com.google");
         if (accounts.length == 0) {
             accountAdapter = new AccountAdapter(this, new Account[0]);
             setListAdapter(accountAdapter);
@@ -234,8 +230,7 @@ public class DemoActivity extends ListActivity {
     
     public void onConnect(View view) {
         if (account == null || appspotBase == null) {
-            Toast.makeText(this, R.string.missing_account, Toast.LENGTH_SHORT)
-                    .show();
+            Toast.makeText(this, R.string.missing_account, Toast.LENGTH_SHORT).show();
             return;
         }
         
@@ -312,8 +307,8 @@ public class DemoActivity extends ListActivity {
             final String account = params[1];
             
             httpClient = new DefaultHttpClient();
-            gaeClient = new AppEngineClient(context.getApplicationContext(),
-                    appspotHost, httpClient, account);
+            gaeClient = new AppEngineClient(context.getApplicationContext(), appspotHost,
+                    httpClient, account);
             gaeClient.setHttpUserAgent("AppEngineClientDemo");
             
             final String url = "http://" + appspotHost;
@@ -323,32 +318,25 @@ public class DemoActivity extends ListActivity {
             
             String msg = null;
             try {
-                final int statusCode = gaeClient.execute(req).getStatusLine()
-                        .getStatusCode();
+                final int statusCode = gaeClient.execute(req).getStatusLine().getStatusCode();
                 Log.i(TAG, "Authentication was successful");
                 if (statusCode == 200) {
                     msg = context.getString(R.string.authentication_successful);
                 } else {
-                    msg = String
-                            .format(context
-                                    .getString(R.string.status_code_result),
-                                statusCode);
+                    msg = String.format(context.getString(R.string.status_code_result), statusCode);
                 }
             } catch (IOException e) {
                 Log.w(TAG, "Network error", e);
-                msg = String.format(context.getString(R.string.got_error), e
-                        .getMessage());
+                msg = String.format(context.getString(R.string.got_error), e.getMessage());
             } catch (AppEngineAuthenticationException e) {
                 if (e.isAuthenticationPending()) {
                     Log.i(TAG, "Waiting for user permission");
                     msg = null;
-                    context.startActivityForResult(e
-                            .getPendingAuthenticationPermissionActivity(),
+                    context.startActivityForResult(e.getPendingAuthenticationPermissionActivity(),
                         AUTH_REQUEST);
                 } else {
                     Log.w(TAG, "Authentication error", e);
-                    msg = String.format(context.getString(R.string.got_error),
-                        e.getMessage());
+                    msg = String.format(context.getString(R.string.got_error), e.getMessage());
                 }
             }
             

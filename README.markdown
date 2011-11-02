@@ -1,6 +1,6 @@
 AppEngine Client for Android
 ============================
-Copyright (C) 2011 Alexandre Roman
+Copyright (C) 2011 Pixmob (http://github.com/pixmob)
 
 If you consume web services hosted on AppEngine, this project is for you!
 The class AppEngineClient makes your web requests authenticated with a Google
@@ -64,17 +64,3 @@ You have two choices for using this library:
  * use a JAR library: click on DOWNLOAD and put the JAR file in your libs directory;
  * use AppEngineClient as a library project: use git to clone this repository and
  link it as a library project (you can easily follow updates).
-
-If you want to compile the library by yourself, please note that there is a bug
-in the SDK r10 with library projects ([issue 13024](http://code.google.com/p/android/issues/detail?id=13024)).
-After using the command "android update", you should add these 2 lines in the
-file build.xml, following the tag setup:
-
-    <!-- fix compile error with SDK r10: http://code.google.com/p/android/issues/detail?id=13024 -->
-    <path id="android.libraries.src"><path refid="project.libraries.src" /></path>
-    <path id="android.libraries.jars"><path refid="project.libraries.jars" /></path>
-
-Run this command to compile the project as a JAR (only classes are added to the
-JAR, the sample application is not included):
-
-    $ ant clean jar

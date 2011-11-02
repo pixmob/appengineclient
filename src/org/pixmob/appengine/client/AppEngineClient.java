@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.pixmob.appengine.client;
+package org.pixmob.appengine.client;
 
-import static com.pixmob.appengine.client.AppEngineAuthenticationException.AUTHENTICATION_FAILED;
-import static com.pixmob.appengine.client.AppEngineAuthenticationException.AUTHENTICATION_PENDING;
-import static com.pixmob.appengine.client.AppEngineAuthenticationException.AUTHENTICATION_UNAVAILABLE;
+import static org.pixmob.appengine.client.AppEngineAuthenticationException.AUTHENTICATION_FAILED;
+import static org.pixmob.appengine.client.AppEngineAuthenticationException.AUTHENTICATION_PENDING;
+import static org.pixmob.appengine.client.AppEngineAuthenticationException.AUTHENTICATION_UNAVAILABLE;
 
 import java.io.BufferedReader;
 import java.io.IOException;
